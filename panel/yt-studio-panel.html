@@ -1,0 +1,230 @@
+<title>YT-Studio paneli</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Tartib: chapda yozish maydoni, o'ngda «montaj rejasi» — matn qanday 5 rils + 3 videoga bo'linishi
+   vaqt shkalasida ko'rinadi; pastda yuborish va keyingi qadamlar. Telefonda bitta ustun. */
+:root {
+  --bg: #f3f5f4; --surface: #ffffff; --fg: #17201e; --muted: #5d6b67; --line: #d5dcda;
+  --accent: #0d6b5f; --accent-fg: #ffffff; --tall: #c2410c; --wide: #1d4ed8; --warn: #a15c00;
+  --warn-bg: #fff4dc; --track: #e6ebe9;
+  --display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #101615; --surface: #18201e; --fg: #e7eeec; --muted: #94a39f; --line: #2b3633;
+  --accent: #3fb8a6; --accent-fg: #06201c; --tall: #fb923c; --wide: #7aa5ff; --warn: #f2c26b;
+  --warn-bg: #33290f; --track: #232d2a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #101615; --surface: #18201e; --fg: #e7eeec; --muted: #94a39f; --line: #2b3633;
+  --accent: #3fb8a6; --accent-fg: #06201c; --tall: #fb923c; --wide: #7aa5ff; --warn: #f2c26b;
+  --warn-bg: #33290f; --track: #232d2a; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px; }
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+h1 { font-family: var(--display); font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+header p { margin: 0; color: var(--muted); }
+h2 { font-family: var(--display); font-size: 17px; font-weight: 700; margin: 0; text-wrap: balance; }
+.grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 820px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px;
+  display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+label { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+input, textarea { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 9px 11px; width: 100%; box-sizing: border-box; }
+textarea { min-height: 300px; resize: vertical; line-height: 1.55; }
+input:focus-visible, textarea:focus-visible, a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+.counts { display: flex; flex-wrap: wrap; gap: 4px 18px; font-family: var(--mono); font-size: 13px;
+  color: var(--muted); font-variant-numeric: tabular-nums; }
+.counts b { color: var(--fg); font-weight: 500; }
+.note { background: var(--warn-bg); color: var(--warn); border-radius: 6px; padding: 9px 12px; font-size: 13px; margin: 0; }
+.example { font-size: 12px; font-family: var(--mono); color: var(--warn); }
+
+/* Montaj rejasi */
+.lane-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.lane-head span { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.clips { display: flex; flex-direction: column; gap: 8px; }
+.clip { display: grid; grid-template-columns: 62px minmax(0, 1fr) 48px; gap: 10px; align-items: center; }
+.clip .name { font-family: var(--mono); font-size: 12px; }
+.clip .dur { font-family: var(--mono); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+.bar { height: 14px; background: var(--track); border-radius: 3px; position: relative; overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; border-radius: 3px; display: block; }
+.tall .bar i { background: var(--tall); } .wide .bar i { background: var(--wide); }
+.bar u { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, var(--muted) 0 2px, transparent 2px 6px); opacity: .55; }
+.clip .first { grid-column: 2 / -1; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: -4px; }
+.legend { font-size: 12px; color: var(--muted); margin: 0; }
+.empty { color: var(--muted); font-size: 14px; margin: 0; }
+
+/* Yuborish */
+.send { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 8px; font: 600 15px var(--body); text-decoration: none;
+  border-radius: 6px; padding: 11px 18px; border: 1px solid var(--accent); cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--accent-fg); }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+.file { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+ol.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; max-width: 70ch; }
+ol.steps a, .limits a { color: var(--accent); }
+.limits { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; display: flex; flex-direction: column; gap: 4px; max-width: 75ch; }
+#copyOut { min-height: 120px; font-family: var(--mono); font-size: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>YT-Studio</h1>
+    <p>Matn yozing — har 12 soatda 5 ta rils va 3 ta qisqa video tayyorlanadi.</p>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-write">
+      <h2 id="h-write">Matn <span class="example" id="exampleTag" hidden>· namuna matn</span></h2>
+      <div class="field">
+        <label for="fTitle">Sarlavha</label>
+        <input id="fTitle" maxlength="80" autocomplete="off">
+      </div>
+      <div class="two">
+        <div class="field">
+          <label for="fKeys">Fon videosi so'zlari (inglizcha)</label>
+          <input id="fKeys" autocomplete="off" placeholder="water, ocean, rain">
+        </div>
+        <div class="field">
+          <label for="fTags">Teglar</label>
+          <input id="fTags" autocomplete="off" placeholder="suv, faktlar">
+        </div>
+      </div>
+      <div class="field">
+        <label for="fText">Matn</label>
+        <textarea id="fText" spellcheck="false"></textarea>
+        <p class="hint">Matn o'zgartirilmaydi, faqat gap chegarasida bo'linadi. Har rils 45–55 soniya chiqishi uchun 550–700 so'z yozing.</p>
+      </div>
+      <div class="counts" id="counts"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-plan">
+      <h2 id="h-plan">Montaj rejasi</h2>
+      <div id="plan"></div>
+      <p class="legend">Davomiylik — taxmin (belgi soniga qarab); haqiqiysi diktor ovoziga bog'liq. Rilsda chiziqli qism — 58 soniyaga sig'may, shu rilsga kirmaydigan gaplar (ular qisqa videolarda bor).</p>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="h-send">
+    <h2 id="h-send">Navbatga qo'shish</h2>
+    <div class="send">
+      <a class="btn primary" id="sendLink" target="_blank" rel="noopener">GitHub'da saqlash</a>
+      <button class="btn ghost" id="copyBtn" type="button">Matnni nusxalash</button>
+      <span class="file" id="fileName"></span>
+    </div>
+    <p class="note" id="longNote" hidden>Matn uzun — havolaga sig'maydi. Avval «Matnni nusxalash» ni bosing, keyin «GitHub'da saqlash» ochgan sahifadagi bo'sh maydonga joylang (Ctrl+V).</p>
+    <p class="hint" id="copyMsg" hidden></p>
+    <textarea id="copyOut" readonly hidden aria-label="Fayl matni"></textarea>
+    <ol class="steps">
+      <li>«GitHub'da saqlash» yangi oynada tayyor faylni ochadi. O'sha sahifada yashil <b>Commit changes</b> tugmasini bosing — matn navbatga tushadi.</li>
+      <li>Dastur navbatdagi bitta matnni har 12 soatda oladi: Toshkent vaqti bilan taxminan 08:23 va 20:23 (GitHub kechiktirishi mumkin). Kutmaslik uchun: <a href="https://github.com/azek0073/yt-studio/actions/workflows/yt-studio.yml" target="_blank" rel="noopener">Run workflow</a>.</li>
+      <li>Tayyor videolar: <a href="https://github.com/azek0073/yt-studio/actions" target="_blank" rel="noopener">ishga tushishlar ro'yxati</a> → kerakli qator → sahifa pastidagi <b>Artifacts</b> (3 kun saqlanadi).</li>
+      <li>Navbatni ko'rish: <a href="https://github.com/azek0073/yt-studio/tree/main/matn" target="_blank" rel="noopener">matn papkasi</a>. Ishlangan matnlar <code>tayyor</code> ichiga o'tadi.</li>
+    </ol>
+    <ul class="limits">
+      <li>Bu sahifa videoni o'zi yasamaydi va GitHub'ga o'zi yoza olmaydi — u matnni tayyorlab, GitHub sahifasini ochib beradi.</li>
+      <li>Repo ochiq: saqlangan matn hammaga ko'rinadi.</li>
+      <li>YouTube'ga avtomatik yuklash kalitlar qo'shilmaguncha ishlamaydi; ungacha videolarni Artifacts'dan olib, qo'lda yuklaysiz.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(() => {
+  const REPO = "https://github.com/azek0073/yt-studio";
+  const RILS = 5, VIDEO = 3, RILS_MAX = 58, PAUZA = 0.25, BELGI_SONIYA = 13, URL_MAX = 6500;
+  const SAMPLE = {
+    title: "Suv haqida qiziqarli faktlar", keys: "water, ocean, rain, river", tags: "suv, faktlar, tabiat",
+    text: "Suv — Yerdagi hayotning asosi. Sayyoramiz yuzasining taxminan yetmish foizi suv bilan qoplangan. Shunga qaramay, bu suvning juda oz qismi chuchuk suvdir. Chuchuk suvning katta qismi muzliklarda saqlanadi. Inson tanasining yarmidan ko'pi suvdan iborat. Shuning uchun har kuni yetarlicha suv ichish muhim. Suv uch holatda uchraydi: suyuq, qattiq va gaz. Muz suvdan yengil, shu sababli u suv yuzida qalqib turadi. Bu xususiyat qishda ko'llardagi baliqlarni asraydi. Okeanlar ob-havoga katta ta'sir ko'rsatadi. Yomg'ir, qor va daryolar suvning tabiatdagi aylanishining bir qismidir. Suvni tejash har birimizning qo'limizda. Jo'mrakni vaqtida yopish ham katta foyda beradi. Toza suv — eng qimmat boyliklardan biri."
+  };
+  const $ = id => document.getElementById(id);
+  const f = { title: $("fTitle"), keys: $("fKeys"), tags: $("fTags"), text: $("fText") };
+
+  // Dasturdagi (ytstudio/matn.py) bilan bir xil qoidalar
+  const gaplarga = t => { t = t.replace(/\s+/g, " ").trim(); return t ? t.split(/(?<=[.!?…])["»”)]*\s+/).map(s => s.trim()).filter(Boolean) : []; };
+  function bolakla(g, n) {
+    n = Math.min(n, g.length); if (n <= 0) return [];
+    const jami = g.reduce((a, s) => a + s.length, 0), out = []; let cur = [], acc = 0;
+    g.forEach((s, i) => {
+      cur.push(s); acc += s.length;
+      if (out.length < n - 1 && (acc >= jami * (out.length + 1) / n || g.length - i - 1 === n - out.length - 1)) { out.push(cur); cur = []; }
+    });
+    if (cur.length) out.push(cur);
+    return out;
+  }
+  const dav = s => Math.max(1, s.length / BELGI_SONIYA) + PAUZA;
+  const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  function fileText() {
+    const head = [["sarlavha", f.title.value], ["kalit", f.keys.value], ["teglar", f.tags.value]]
+      .filter(([, v]) => v.trim()).map(([k, v]) => `${k}: ${v.trim().replace(/\s+/g, " ")}`).join("\n");
+    return (head ? head + "\n\n" : "") + f.text.value.trim() + "\n";
+  }
+  function fileName() {
+    const d = new Date(), p = n => String(n).padStart(2, "0");
+    const slug = (f.title.value || "matn").toLowerCase().replace(/[ʻʼ'`’‘]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30) || "matn";
+    return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}_${slug}.txt`;
+  }
+
+  function lane(title, cls, parts, cap) {
+    const rows = parts.map((gaplar, i) => {
+      let t = 0, olindi = 0;
+      for (const g of gaplar) { const d = dav(g); if (cap && olindi && t + d > cap) break; t += d; olindi++; }
+      const toliq = gaplar.reduce((a, g) => a + dav(g), 0);
+      return { i: i + 1, t, toliq, olindi, jami: gaplar.length, first: gaplar[0] };
+    });
+    const max = Math.max(cap || 0, ...rows.map(r => r.toliq), 1);
+    return `<div class="lane-head"><b>${title}</b><span>${rows.length} ta</span></div><div class="clips ${cls}">` + rows.map(r =>
+      `<div class="clip"><span class="name">${cls === "tall" ? "rils" : "video"} ${r.i}</span>
+        <span class="bar"><i style="width:${(r.t / max * 100).toFixed(1)}%"></i>${r.toliq > r.t ? `<u style="left:${(r.t / max * 100).toFixed(1)}%;width:${((r.toliq - r.t) / max * 100).toFixed(1)}%"></u>` : ""}</span>
+        <span class="dur">${Math.round(r.t)} s</span>
+        <span class="first">${r.olindi}/${r.jami} gap · ${esc(r.first)}</span></div>`).join("") + `</div>`;
+  }
+
+  function render() {
+    const gaplar = gaplarga(f.text.value);
+    const soz = f.text.value.trim() ? f.text.value.trim().split(/\s+/).length : 0;
+    $("counts").innerHTML = `<span><b>${soz}</b> so'z</span><span><b>${gaplar.length}</b> gap</span><span>~<b>${Math.round(gaplar.reduce((a, g) => a + dav(g), 0))}</b> s ovoz</span>`;
+    const plan = $("plan");
+    if (!gaplar.length) plan.innerHTML = `<p class="empty">Matn yozilgach, shu yerda 5 rils va 3 video qanday bo'linishi ko'rinadi.</p>`;
+    else {
+      const kam = gaplar.length < RILS ? `<p class="note">Matnda ${gaplar.length} ta gap bor — 5 rils uchun kamida 5 gap kerak. Kamroq video chiqadi.</p>` : "";
+      plan.innerHTML = `<div style="display:flex;flex-direction:column;gap:18px">${kam}${lane("Rils · tik 1080×1920", "tall", bolakla(gaplar, RILS), RILS_MAX)}${lane("Qisqa video · yotiq 1920×1080", "wide", bolakla(gaplar, VIDEO), 0)}</div>`;
+    }
+    const name = fileName(), body = fileText(), a = $("sendLink");
+    const full = `${REPO}/new/main/matn?filename=${encodeURIComponent(name)}&value=${encodeURIComponent(body)}`;
+    const uzun = full.length > URL_MAX;
+    a.href = uzun ? `${REPO}/new/main/matn?filename=${encodeURIComponent(name)}` : full;
+    a.setAttribute("aria-disabled", gaplar.length ? "false" : "true");
+    $("longNote").hidden = !uzun || !gaplar.length;
+    $("fileName").textContent = gaplar.length ? "matn/" + name : "";
+    $("exampleTag").hidden = f.text.value !== SAMPLE.text;
+    try { localStorage.setItem("ytstudio:draft", JSON.stringify({ title: f.title.value, keys: f.keys.value, tags: f.tags.value, text: f.text.value })); } catch (e) {}
+  }
+
+  $("copyBtn").addEventListener("click", () => {
+    const body = fileText(), msg = $("copyMsg"), out = $("copyOut");
+    const fallback = () => { out.hidden = false; out.value = body; out.focus(); out.select();
+      msg.textContent = "Avtomatik nusxalab bo'lmadi — quyidagi matn belgilandi, Ctrl+C bosing."; msg.hidden = false; };
+    try { navigator.clipboard.writeText(body).then(() => { msg.textContent = "Nusxalandi. GitHub sahifasidagi maydonga joylang (Ctrl+V)."; msg.hidden = false; out.hidden = true; }, fallback); }
+    catch (e) { fallback(); }
+  });
+
+  let draft = null;
+  try { draft = JSON.parse(localStorage.getItem("ytstudio:draft") || "null"); } catch (e) {}
+  const start = draft && typeof draft.text === "string" && draft.text.trim() ? draft : SAMPLE;
+  f.title.value = start.title || ""; f.keys.value = start.keys || ""; f.tags.value = start.tags || ""; f.text.value = start.text || "";
+  Object.values(f).forEach(el => el.addEventListener("input", render));
+  render();
+})();
+</script>
