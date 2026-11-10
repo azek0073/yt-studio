@@ -1,0 +1,9 @@
+.env
+client_secret.json
+token.json
+holat.json
+chiqish/
+kesh/
+fon/
+matn/xato/
+__pycache__/

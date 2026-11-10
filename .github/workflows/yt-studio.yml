@@ -1,0 +1,100 @@
+name: YT-Studio (rils va qisqa video)
+
+# Har 12 soatda: matn/ dagi navbatdagi .txt fayldan 5 rils + 3 qisqa video.
+# Push (kod o'zgarsa) yoki qo'lda «sinov» belgisi bilan — SINOV: namuna matndan video yasaydi,
+# YouTube'ga YUKLAMAYDI va matn/ ga tegmaydi.
+on:
+  schedule:
+    - cron: '23 3,15 * * *'   # 03:23 va 15:23 UTC (GitHub jadvali kechikishi mumkin)
+  workflow_dispatch:
+    inputs:
+      sinov:
+        description: "Sinov: namuna matn, YouTube'ga yuklamaydi"
+        type: boolean
+        default: false
+  push:
+    paths-ignore: ['matn/**', 'README.md']
+
+env:
+  SINOV: ${{ github.event_name == 'push' || inputs.sinov == true }}
+
+permissions:
+  contents: write   # ishlangan matnni matn/tayyor/ ga ko'chirib saqlash uchun
+
+concurrency:
+  group: yt-studio
+  cancel-in-progress: false
+
+jobs:
+  studio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: ffmpeg va shrift
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
+
+      - name: Kutubxonalar
+        run: pip install -q -r requirements.txt
+
+      - name: Oflayn sinov
+        run: python test_ytstudio.py
+
+      - name: Sinov rejimi — namuna matn 
+        if: env.SINOV == 'true'
+        run: cp namuna.txt matn/00_sinov.txt
+
+      - name: Videolarni tayyorlash
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          MAXFIYLIK: ${{ vars.YT_MAXFIYLIK || 'private' }}
+        run: python -m ytstudio tayyorla
+
+      - name: Sinov rejimi — 8 ta video chiqqanini tekshirish 
+        if: env.SINOV == 'true'
+        run: |
+          n=$(find chiqish -name '*.mp4' | wc -l)
+          echo "Tayyor videolar: $n"
+          test "$n" -eq 8
+
+      # YouTube'ga yuklash: faqat jadval/qo'lda va faqat ikkala secret bo'lsa. Secret matni logga chiqmaydi.
+      - name: YouTube'ga yuklash
+        if: env.SINOV != 'true'
+        env:
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_TOKEN: ${{ secrets.YT_TOKEN }}
+          MAXFIYLIK: ${{ vars.YT_MAXFIYLIK || 'private' }}
+        run: |
+          if [ -z "$YT_CLIENT_SECRET" ] || [ -z "$YT_TOKEN" ]; then
+            echo "YT_CLIENT_SECRET / YT_TOKEN secret'lari yo'q — yuklanmadi. Videolar artefaktda."
+            exit 0
+          fi
+          printf '%s' "$YT_CLIENT_SECRET" > client_secret.json
+          printf '%s' "$YT_TOKEN" > token.json
+          python -m ytstudio yukla
+          rm -f client_secret.json token.json
+
+      - name: Videolarni artefakt qilib saqlash
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yt-studio-${{ github.run_number }}
+          path: chiqish/**/*.mp4
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Ishlangan matnni saqlash (matn/ → matn/tayyor/)
+        if: env.SINOV != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A matn
+          git diff --cached --quiet || { git commit -q -m "yt-studio: matn ishlandi [skip ci]"; git push; }
