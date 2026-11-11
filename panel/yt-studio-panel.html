@@ -75,6 +75,31 @@ ol.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column;
 ol.steps a, .limits a { color: var(--accent); }
 .limits { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; display: flex; flex-direction: column; gap: 4px; max-width: 75ch; }
 #copyOut { min-height: 120px; font-family: var(--mono); font-size: 12px; }
+
+/* Tayyor videolar va YouTube */
+.yt { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.yt .field { flex: 1 1 260px; min-width: 0; }
+.yt .field.small { flex: 0 1 170px; }
+select { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 9px 11px; width: 100%; }
+.state { font-size: 13px; margin: 0; color: var(--muted); }
+.state.ok { color: var(--accent); } .state.bad { color: var(--tall); }
+details summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+details ol { margin: 10px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 75ch; font-size: 14px; }
+code { font-family: var(--mono); font-size: 0.92em; overflow-wrap: anywhere; }
+.batch { display: flex; flex-direction: column; gap: 12px; }
+.batch-head { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; border-top: 1px solid var(--line); padding-top: 16px; }
+.batch-head b { font-family: var(--display); font-size: 16px; }
+.batch-head span { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.tag { font-family: var(--mono); font-size: 11px; color: var(--warn); background: var(--warn-bg); border-radius: 4px; padding: 1px 6px; }
+.vgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; align-items: start; }
+.vcard { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vcard video { width: 100%; background: #000; border-radius: 6px; display: block; }
+.vcard.tall video { aspect-ratio: 9 / 16; } .vcard.wide video { aspect-ratio: 16 / 9; }
+.vcard .vt { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.vcard .vm { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.vcard .btn { padding: 8px 12px; font-size: 13px; justify-content: center; }
+.vcard .state a, .state a { color: var(--accent); }
+progress { width: 100%; height: 6px; accent-color: var(--accent); }
 </style>
 
 <div class="wrap">
@@ -134,8 +159,49 @@ ol.steps a, .limits a { color: var(--accent); }
     <ul class="limits">
       <li>Bu sahifa videoni o'zi yasamaydi va GitHub'ga o'zi yoza olmaydi — u matnni tayyorlab, GitHub sahifasini ochib beradi.</li>
       <li>Repo ochiq: saqlangan matn hammaga ko'rinadi.</li>
-      <li>YouTube'ga avtomatik yuklash kalitlar qo'shilmaguncha ishlamaydi; ungacha videolarni Artifacts'dan olib, qo'lda yuklaysiz.</li>
+      <li>Tayyor videolar pastdagi bo'limda chiqadi va o'sha yerdan YouTube'ga joylanadi.</li>
     </ul>
+  </section>
+
+  <section class="panel" aria-labelledby="h-vids">
+    <h2 id="h-vids">Tayyor videolar</h2>
+    <p class="state" id="vidState">Yuklanmoqda…</p>
+
+    <div id="ytBox" hidden style="display:flex;flex-direction:column;gap:12px">
+      <div class="yt">
+        <div class="field">
+          <label for="ytClient">Google Client ID</label>
+          <input id="ytClient" autocomplete="off" spellcheck="false" placeholder="1234567890-abc…apps.googleusercontent.com">
+        </div>
+        <div class="field small">
+          <label for="ytPrivacy">Ko'rinishi</label>
+          <select id="ytPrivacy">
+            <option value="private">Yopiq (faqat men)</option>
+            <option value="unlisted">Havola bilan</option>
+            <option value="public">Hammaga ochiq</option>
+          </select>
+        </div>
+        <button class="btn primary" id="ytLogin" type="button">YouTube'ga kirish</button>
+      </div>
+      <p class="state" id="ytState">Kirilmagan. Kirgach, har video ostidagi «YouTube'ga joylash» tugmasi ishlaydi.</p>
+      <details>
+        <summary>Client ID qayerdan olinadi (bir marta, bepul)</summary>
+        <ol>
+          <li><a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">Google Cloud'da loyiha oching</a>, so'ng «APIs &amp; Services» → «Library» → <b>YouTube Data API v3</b> → Enable.</li>
+          <li>«OAuth consent screen»: turi External; «Test users» ga YouTube kanalingiz pochtasini qo'shing.</li>
+          <li>«Credentials» → «Create credentials» → «OAuth client ID» → turi <b>Web application</b>. «Authorized JavaScript origins» ga shu sayt manzilini yozing: <code id="originHint"></code></li>
+          <li>Chiqqan <b>Client ID</b> ni yuqoridagi maydonga qo'ying (u maxfiy emas; «Client secret» kerak emas va uni hech qayerga yozmang).</li>
+          <li>«YouTube'ga kirish» ni bosing. «Google hasn't verified this app» chiqsa: Advanced → Go to … → Allow.</li>
+        </ol>
+      </details>
+      <ul class="limits">
+        <li>Google tekshiruvidan (audit) o'tmagan loyiha orqali joylangan video «Hammaga ochiq» tanlansa ham <b>yopiq</b> bo'lib qoladi. Uni YouTube Studio'da qo'lda ochasiz yoki auditdan o'tasiz.</li>
+        <li>Odatiy bepul kvota kuniga taxminan 6 ta video joylashga yetadi.</li>
+        <li>Kirish 1 soat amal qiladi va faqat shu brauzer oynasida saqlanadi.</li>
+      </ul>
+    </div>
+
+    <div id="batches" style="display:flex;flex-direction:column;gap:24px"></div>
   </section>
 </div>
 
@@ -226,5 +292,121 @@ ol.steps a, .limits a { color: var(--accent); }
   f.title.value = start.title || ""; f.keys.value = start.keys || ""; f.tags.value = start.tags || ""; f.text.value = start.text || "";
   Object.values(f).forEach(el => el.addEventListener("input", render));
   render();
+})();
+</script>
+
+<script>
+/* Tayyor videolar (videolar.json — GitHub Pages saytida) va brauzerdan YouTube'ga joylash.
+   Kirish: Google Identity Services (token faqat xotirada, 1 soat). Client ID maxfiy emas. */
+(() => {
+  const SAYT = "https://azek0073.github.io/yt-studio/";
+  const SCOPE = "https://www.googleapis.com/auth/youtube.upload";
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } },
+                  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+  let token = "", tokenEnd = 0;
+  const done = store.get("ytstudio:yuklangan", {});
+  const buttons = [];
+  const loggedIn = () => token && Date.now() < tokenEnd;
+
+  function setYt(text, cls) { const s = $("ytState"); s.textContent = text; s.className = "state" + (cls ? " " + cls : ""); }
+  function refreshButtons() { buttons.forEach(b => { if (!b.dataset.busy) b.setAttribute("aria-disabled", loggedIn() ? "false" : "true"); }); }
+
+  function xatoMatni(status, body) {
+    let sabab = "", xabar = "";
+    try { const j = JSON.parse(body); xabar = j.error?.message || ""; sabab = j.error?.errors?.[0]?.reason || ""; } catch (e) {}
+    if (status === 401) return "Kirish muddati tugagan — «YouTube'ga kirish» ni qayta bosing.";
+    if (/quota|dailyLimit|rateLimit/i.test(sabab)) return "Bugungi YouTube API kvotasi tugadi. Ertaga urinib ko'ring.";
+    if (sabab === "uploadLimitExceeded") return "Kanalning kunlik yuklash chegarasi tugadi. Ertaga urinib ko'ring.";
+    if (sabab === "youtubeSignupRequired") return "Bu Google hisobida YouTube kanali yo'q — avval kanal oching.";
+    return `YouTube rad etdi (${status}${sabab ? ", " + sabab : ""})${xabar ? ": " + xabar : ""}`;
+  }
+
+  async function joyla(v, card, btn, state) {
+    if (!loggedIn()) { state.textContent = "Avval yuqorida «YouTube'ga kirish» ni bosing."; state.className = "state bad"; return; }
+    btn.dataset.busy = "1"; btn.setAttribute("aria-disabled", "true");
+    const bar = el("progress"); bar.max = 100; bar.value = 0; card.insertBefore(bar, state);
+    const tugat = (text, cls, ok) => { bar.remove(); delete btn.dataset.busy; state.textContent = ""; state.className = "state " + cls;
+      if (ok) { state.append("Joylandi: "); const a = el("a", "", "youtu.be/" + ok); a.href = "https://youtu.be/" + ok; a.target = "_blank"; a.rel = "noopener"; state.append(a); btn.hidden = true; }
+      else { state.textContent = text; refreshButtons(); } };
+    try {
+      state.className = "state"; state.textContent = "Video o'qilmoqda…";
+      const r0 = await fetch(v.fayl); if (!r0.ok) throw new Error("Video fayli topilmadi (" + r0.status + ")");
+      const blob = await r0.blob();
+      state.textContent = "YouTube'ga ulanmoqda…";
+      const r1 = await fetch("https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token, "Content-Type": "application/json; charset=UTF-8",
+                   "X-Upload-Content-Type": "video/mp4", "X-Upload-Content-Length": String(blob.size) },
+        body: JSON.stringify({ snippet: { title: v.sarlavha, description: v.tavsif, tags: v.teglar || [], categoryId: "22" },
+                               status: { privacyStatus: $("ytPrivacy").value, selfDeclaredMadeForKids: false } }) });
+      if (!r1.ok) return tugat(xatoMatni(r1.status, await r1.text()), "bad");
+      const manzil = r1.headers.get("Location");
+      if (!manzil) return tugat("YouTube yuklash manzilini bermadi — brauzer javob sarlavhasini yashirdi.", "bad");
+      const javob = await new Promise((res, rej) => {
+        const x = new XMLHttpRequest(); x.open("PUT", manzil); x.setRequestHeader("Content-Type", "video/mp4");
+        x.upload.onprogress = e => { if (e.lengthComputable) { bar.value = e.loaded / e.total * 100; state.textContent = `Yuklanmoqda… ${Math.round(e.loaded / e.total * 100)}%`; } };
+        x.onload = () => res({ status: x.status, body: x.responseText }); x.onerror = () => rej(new Error("Tarmoq uzildi — qayta urinib ko'ring."));
+        x.send(blob); });
+      if (javob.status !== 200 && javob.status !== 201) return tugat(xatoMatni(javob.status, javob.body), "bad");
+      const id = JSON.parse(javob.body).id; done[v.fayl] = id; store.set("ytstudio:yuklangan", done);
+      tugat("", "ok", id);
+    } catch (e) { tugat(e.message || String(e), "bad"); }
+  }
+
+  function chiz(data) {
+    const box = $("batches"); box.textContent = "";
+    const toplamlar = (data.toplamlar || []).filter(t => (t.videolar || []).length);
+    if (!toplamlar.length) { $("vidState").textContent = "Hali tayyor video yo'q. Matn navbatga qo'shilgach va dastur ishlagach, shu yerda chiqadi."; return; }
+    $("vidState").hidden = true; $("ytBox").hidden = false;
+    for (const t of toplamlar) {
+      const b = el("div", "batch"), h = el("div", "batch-head");
+      h.append(el("b", "", t.nom || t.id), el("span", "", `${t.id} UTC · ${t.videolar.length} ta video`));
+      if (t.sinov) h.append(el("span", "tag", "namuna"));
+      const g = el("div", "vgrid");
+      for (const v of t.videolar) {
+        const c = el("div", "vcard " + (v.tur === "rils" ? "tall" : "wide"));
+        const vid = el("video"); vid.controls = true; vid.preload = "metadata"; vid.playsInline = true; vid.src = v.fayl;
+        const state = el("p", "state"), btn = el("button", "btn ghost", "YouTube'ga joylash"); btn.type = "button";
+        c.append(vid, el("div", "vt", v.sarlavha), el("div", "vm", `${v.tur} · ${Math.round(v.dav || 0)} s`), btn, state);
+        const id = done[v.fayl] || v.video_id;
+        if (id) { btn.hidden = true; state.className = "state ok"; state.append("Joylangan: "); const a = el("a", "", "youtu.be/" + id); a.href = "https://youtu.be/" + id; a.target = "_blank"; a.rel = "noopener"; state.append(a); }
+        else { buttons.push(btn); btn.addEventListener("click", () => joyla(v, c, btn, state)); }
+        g.append(c);
+      }
+      b.append(h, g); box.append(b);
+    }
+    refreshButtons();
+  }
+
+  // Kirish
+  $("ytClient").value = store.get("ytstudio:clientId", "");
+  $("ytPrivacy").value = store.get("ytstudio:privacy", "private");
+  $("ytClient").addEventListener("input", () => store.set("ytstudio:clientId", $("ytClient").value.trim()));
+  $("ytPrivacy").addEventListener("change", () => store.set("ytstudio:privacy", $("ytPrivacy").value));
+  $("originHint").textContent = location.origin;
+  $("ytLogin").addEventListener("click", () => {
+    const cid = $("ytClient").value.trim();
+    if (!/\.apps\.googleusercontent\.com$/.test(cid)) return setYt("Avval Client ID ni kiriting (…apps.googleusercontent.com bilan tugaydi). Qayerdan olish — pastda.", "bad");
+    if (!window.google?.accounts?.oauth2) return setYt("Google kirish xizmati yuklanmadi. Sahifani yangilang yoki reklama to'siqni o'chiring.", "bad");
+    try {
+      google.accounts.oauth2.initTokenClient({ client_id: cid, scope: SCOPE,
+        callback: r => { if (r && r.access_token) { token = r.access_token; tokenEnd = Date.now() + (Number(r.expires_in || 3600) - 60) * 1000;
+            setYt("Kirildi. Endi video ostidagi «YouTube'ga joylash» ni bosing (kirish 1 soat amal qiladi).", "ok"); refreshButtons(); }
+          else setYt("Kirish bekor qilindi yoki ruxsat berilmadi" + (r?.error ? ` (${r.error})` : "") + ".", "bad"); },
+        error_callback: e => setYt("Kirish oynasi ochilmadi yoki yopildi" + (e?.type ? ` (${e.type})` : "") + ". Qalqib chiquvchi oynalarga ruxsat bering.", "bad")
+      }).requestAccessToken();
+    } catch (e) { setYt("Kirishni boshlab bo'lmadi: " + (e.message || e), "bad"); }
+  });
+
+  // Sayt versiyasidami? (Claude ichidagi nusxada tashqi video va Google kirishi ishlamaydi.)
+  fetch("videolar.json", { cache: "no-store" }).then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); }).then(data => {
+    const s = document.createElement("script"); s.src = "https://accounts.google.com/gsi/client"; s.async = true; document.head.append(s);
+    chiz(data);
+  }).catch(() => {
+    const p = $("vidState"); p.textContent = "Videolar va YouTube'ga joylash sayt versiyasida ishlaydi: ";
+    const a = el("a", "", SAYT); a.href = SAYT; a.target = "_blank"; a.rel = "noopener"; p.append(a);
+  });
 })();
 </script>

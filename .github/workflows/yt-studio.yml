@@ -82,6 +82,18 @@ jobs:
           python -m ytstudio yukla
           rm -f client_secret.json token.json
 
+      # Sayt (GitHub Pages): panel + tayyor videolar. Oxirgi 3 to'plam saqlanadi.
+      - name: Saytni yig'ish
+        run: >
+          python -m ytstudio.sayt
+          --asos "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          ${{ env.SINOV == 'true' && '--sinov' || '' }}
+
+      - name: Saytni topshirish
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: sayt
+
       - name: Videolarni artefakt qilib saqlash
         if: always()
         uses: actions/upload-artifact@v4
@@ -98,3 +110,19 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A matn
           git diff --cached --quiet || { git commit -q -m "yt-studio: matn ishlandi [skip ci]"; git push; }
+
+  # Saytni chiqarish. Pages yoqilmagan bo'lsa (Settings → Pages → Source: GitHub Actions) shu ish
+  # yiqiladi, lekin videolar tayyorlanishi to'xtamaydi.
+  sayt:
+    needs: studio
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.chiqar.outputs.page_url }}
+    steps:
+      - id: chiqar
+        uses: actions/deploy-pages@v4
